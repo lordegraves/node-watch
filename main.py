@@ -1,4 +1,4 @@
-from pprint import pprint
+import json
 
 from nodewatch.collectors.cpu import collect_cpu
 from nodewatch.collectors.system_info import collect_system_info
@@ -14,25 +14,26 @@ def format_uptime(seconds):
 
     return f"{days:02}:{hours:02}:{minutes:02}:{seconds:02}"
 
-
-def main():
-    print("Node Watch starting...")
-
+def get_node_data():
     system_info = collect_system_info()
     system_info["uptime"] = format_uptime(system_info["uptime_seconds"])
-    disk_info = collect_disk()
 
     cpu_info = collect_cpu()
     memory_info = collect_memory()
+    disk_info = collect_disk()
 
-    node_data = {
+    return {
         "system": system_info,
         "cpu": cpu_info,
         "memory": memory_info,
         "disk": disk_info,
     }
 
-    pprint(node_data)
+def main():
+    print("Node Watch starting...")
+
+    node_data = get_node_data()
+    print(json.dumps(node_data, indent=2))
 
 
 if __name__ == "__main__":
