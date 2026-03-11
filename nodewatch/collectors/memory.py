@@ -1,6 +1,6 @@
 import psutil
 
-def collect_memory():
+def get_memory_info():
     memory = psutil.virtual_memory()
 
     data = {

@@ -1,6 +1,6 @@
 import psutil
 
-def collect_disk():
+def get_disk_info():
     disks = []
 
     for partition in psutil.disk_partitions():

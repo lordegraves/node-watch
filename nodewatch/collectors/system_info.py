@@ -4,7 +4,7 @@ import time
 
 import psutil
 
-def collect_system_info():
+def get_system_info():
     data = {
         "hostname": socket.gethostname(),
         "os": platform.platform(),
