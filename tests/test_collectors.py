@@ -1,10 +1,10 @@
-from nodewatch.collectors.cpu import collect_cpu
-from nodewatch.collectors.disk import collect_disk
-from nodewatch.collectors.memory import collect_memory
-from nodewatch.collectors.system_info import collect_system_info
+from nodewatch.collectors.cpu import get_cpu_info
+from nodewatch.collectors.disk import get_disk_info
+from nodewatch.collectors.memory import get_memory_info
+from nodewatch.collectors.system_info import get_system_info
 
 def test_collect_system_info_returns_expected_keys():
-    data = collect_system_info()
+    data = get_system_info()
 
     assert "hostname" in data
     assert "os" in data
@@ -12,13 +12,13 @@ def test_collect_system_info_returns_expected_keys():
 
 
 def test_collect_cpu_returns_expected_key():
-    data = collect_cpu()
+    data = get_cpu_info()
 
     assert "usage_percent" in data
 
 
 def test_collect_memory_returns_expected_keys():
-    data = collect_memory()
+    data = get_memory_info()
 
     assert "total_mb" in data
     assert "used_mb" in data
@@ -26,7 +26,7 @@ def test_collect_memory_returns_expected_keys():
 
 
 def test_collect_disk_returns_list():
-    data = collect_disk()
+    data = get_disk_info()
 
     if data:
         first_disk = data[0]
