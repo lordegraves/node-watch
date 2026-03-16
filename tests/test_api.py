@@ -19,13 +19,14 @@ def test_root_endpoint_returns_service_info():
     mock_send_json.assert_called_once_with(
         200,
         {
-            "service": "node-watch",
-            "version": "0.1.0",
-            "description": "Lightweight node telemetry service",
-            "endpoints": [
-                "/",
-                "/health",
-                "/node",
+        "service": "node-watch",
+        "version": "0.1.0",
+        "description": "Lightweight node telemetry service",
+        "endpoints": [
+            "/",
+            "/health",
+            "/node",
+            "/metrics",
             ],
         },
     )
