@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: node-watch
   namespace: node-watch
@@ -8,7 +8,6 @@ metadata:
     app.kubernetes.io/part-of: node-watch
     app.kubernetes.io/component: telemetry
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: node-watch

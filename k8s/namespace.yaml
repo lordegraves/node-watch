@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: node-watch
+  labels:
+    app.kubernetes.io/name: node-watch
+    app.kubernetes.io/part-of: node-watch

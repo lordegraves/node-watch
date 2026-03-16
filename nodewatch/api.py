@@ -1,11 +1,21 @@
 import json
+import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from nodewatch.service import get_node_data
 
 
-HOST = "0.0.0.0"
-PORT = 8080
+HOST = os.getenv("NODEWATCH_HOST", "0.0.0.0")
+
+def get_port() -> int:
+    value = os.getenv("NODEWATCH_PORT", "8080")
+    try:
+        return int(value)
+    except ValueError:
+        return 8080
+    
+def get_log_level() -> str:
+    return os.getenv("NODEWATCH_LOG_LEVEL", "info").lower()
 
 
 class NodeWatchHandler(BaseHTTPRequestHandler):
@@ -51,13 +61,15 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
 
     
 def run_server() -> None:
-    server = HTTPServer((HOST, PORT), NodeWatchHandler)
-    print(f"Node Watch API listening on HTTP://{HOST}:{PORT}")
+    port = get_port()
+    server = HTTPServer((HOST, port), NodeWatchHandler)
+    print(f"Node Watch API listening on http://{HOST}:{port}")
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nShutting down Node Watch API...")
+    finally:
         server.server_close()
 
 if __name__ == "__main__":

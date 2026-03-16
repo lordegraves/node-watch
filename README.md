@@ -20,9 +20,7 @@ Current interfaces include:
 - HTTP API
 - Docker container runtime
 
-Future stages will introduce Kubernetes deployment and cloud infrastructure integration.
-
-Lifecycle: Collectors → Service Layer → HTTP API → Docker → Kubernetes
+Lifecycle: Collectors → Service Layer → HTTP API → Container Runtime → Kubernetes (Namespace → Service → ConfigMap → DaemonSet)
 
 ---
 
@@ -37,6 +35,9 @@ Current functionality includes:
 - JSON output suitable for machine consumption
 - Containerized runtime using Docker
 - Structured architecture separating collectors, services, and interfaces
+- Kubernetes namespace isolation
+- ConfigMap-driven runtime configuration
+- DaemonSet deployment model (one monitoring agent per node)
 
 ---
 
@@ -70,6 +71,40 @@ Examples of similar patterns exist in:
 
 ---
 
+### Kubernetes Runtime Architecture
+
+Runtime flow:
+
+Each Kubernetes node automatically runs exactly one Node Watch instance.
+
+Cluster Node
+    ↓
+DaemonSet
+    ↓
+Node Watch Pod
+    ↓
+Container Runtime
+    ↓
+HTTP API
+
+---
+
+## Deployment Architecture
+
+When deployed to Kubernetes, Node Watch runs as a node-level monitoring agent.
+
+ConfigMap
+    ↓
+DaemonSet
+    ↓
+Node Watch Pod (one per node)
+    ↓
+HTTP API
+    ↓
+Service
+
+---
+
 ## Project Structure
 
 ```
@@ -88,6 +123,12 @@ node-watch
 │       ├── cpu.py
 │       ├── memory.py
 │       └── disk.py
+│
+├── k8s/
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── service.yaml
+│   └── daemonset.yaml
 │
 ├── tests/
 │
@@ -148,6 +189,41 @@ curl.exe http://localhost:8080/
 
 ---
 
+## Running in Kubernetes
+
+Node Watch can be deployed into a Kubernetes cluster as a node monitoring agent.
+
+The Kubernetes deployment model uses:
+
+- Namespace isolation
+- ConfigMap-based runtime configuration
+- DaemonSet scheduling (one pod per node)
+
+Apply the manifests:
+
+```
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/daemonset.yaml
+```
+
+Verify the deployment:
+
+```
+kubectl get daemonsets -n node-watch
+kubectl get pods -n node-watch
+kubectl get svc -n node-watch
+```
+
+Access the API locally:
+
+```
+kubectl port-forward -n node-watch svc/node-watch 8080:8080
+```
+
+---
+
 ## Container Runtime Behavior
 
 When Node Watch runs inside Docker, telemetry reflects the container runtime environment rather than the Windows host system.
@@ -162,10 +238,34 @@ This behavior mirrors how infrastructure agents behave when deployed inside cont
 
 ---
 
+## Runtime Configuration
+
+Node Watch supports runtime configuration through environment variables.
+
+In Kubernetes deployments, these values are provided through a ConfigMap.
+
+Current configurable settings:
+
+- **NODEWATCH_PORT**  
+  Controls the HTTP API listening port.  
+  Defaults to `8080` if not provided.
+
+- **NODEWATCH_LOG_LEVEL**  
+  Controls application logging verbosity.  
+  Defaults to `"info"`.
+
+Example configuration (ConfigMap):
+
+NODEWATCH_PORT=8080
+NODEWATCH_LOG_LEVEL=info
+
+The application reads these values at startup using environment variables, allowing behavior to be modified without rebuilding the container image.
+
+---
 
 ## Example Output
 
-Example JSON response from the API:
+Example JSON response from `/node`:
 
 ```json
 {
@@ -183,11 +283,10 @@ The exact fields depend on the current system state.
 
 Planned development stages include:
 
-- Container hardening (non-root execution)
-- Kubernetes deployment manifests
-- Health probes and readiness checks
-- Prometheus-style metrics endpoint
+- Prometheus metrics endpoint (`/metrics`)
+- Host-level telemetry via Kubernetes host mounts
 - Multi-node monitoring aggregation
+- Distributed telemetry collection experiments
 - AWS deployment experiments
 
 ---
@@ -204,6 +303,8 @@ This project is designed as a practical infrastructure engineering exercise focu
 - orchestration readiness
 
 The goal is to build a realistic infrastructure component through incremental improvements rather than a single monolithic implementation.
+
+The project intentionally mirrors patterns used by real node monitoring agents such as Prometheus node_exporter, Datadog agents, and Kubernetes node-level telemetry collectors.
 
 ---
 
