@@ -27,9 +27,15 @@ def render_prometheus_metrics() -> str:
     lines.append("# TYPE nodewatch_memory_percent_used gauge")
     lines.append(f"nodewatch_memory_percent_used {memory.get('percent_used', 0)}")
 
-    lines.append("# HELP nodewatch_uptime_seconds System uptime in seconds")
+    lines.append("# HELP nodewatch_uptime_seconds Container/system uptime in seconds")
     lines.append("# TYPE nodewatch_uptime_seconds gauge")
     lines.append(f"nodewatch_uptime_seconds {system.get('uptime_seconds', 0)}")
+
+    lines.append("# HELP nodewatch_host_uptime_seconds Host uptime in seconds")
+    lines.append("# TYPE nodewatch_host_uptime_seconds gauge")
+    host_uptime = system.get("host_uptime_seconds")
+    if host_uptime is not None:
+        lines.append(f"nodewatch_host_uptime_seconds {host_uptime}")
 
     lines.append("# HELP nodewatch_disk_used_percent Disk used percentage")
     lines.append("# TYPE nodewatch_disk_used_percent gauge")

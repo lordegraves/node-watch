@@ -17,7 +17,8 @@ The project demonstrates how infrastructure tooling evolves from simple scripts 
 Current interfaces include:
 
 - CLI output
-- HTTP API
+- HTTP JSON API
+- Prometheus `/metrics` endpoint
 - Docker container runtime
 
 Lifecycle: Collectors → Service Layer → HTTP API → Container Runtime → Kubernetes (Namespace → Service → ConfigMap → DaemonSet)
@@ -28,6 +29,8 @@ Lifecycle: Collectors → Service Layer → HTTP API → Container Runtime → K
 
 Current functionality includes:
 
+- Prometheus-style `/metrics` endpoint
+- Host-aware telemetry via read-only host filesystem access
 - Modular system collectors
 - Aggregation service layer
 - CLI interface for local inspection
@@ -46,6 +49,8 @@ Current functionality includes:
 Node Watch separates responsibilities into three layers.
 
 Collectors gather system information from the runtime environment.
+
+When running inside Kubernetes, additional host-level telemetry can be collected through a read-only host filesystem mount, allowing the agent to observe node-level telemetry rather than only container-scoped metrics.
 
 The service layer aggregates that information into a unified node representation.
 
@@ -72,6 +77,10 @@ Examples of similar patterns exist in:
 ---
 
 ### Kubernetes Runtime Architecture
+
+Node Watch mounts the host filesystem in read-only mode to collect node-level telemetry.
+
+This pattern mirrors how real monitoring agents (such as Prometheus node_exporter or Datadog agents) access host resources when deployed in Kubernetes.
 
 Runtime flow:
 
@@ -118,6 +127,8 @@ node-watch
 ├── nodewatch/
 │   ├── api.py
 │   ├── service.py
+│   ├── metrics.py
+│   ├── host_info.py
 │   └── collectors/
 │       ├── system_info.py
 │       ├── cpu.py
@@ -163,6 +174,12 @@ Query the node metrics endpoint:
 curl.exe http://localhost:8080/node
 ```
 
+Query the Prometheus metrics endpoint:
+
+```
+curl.exe http://localhost:8080/metrics
+```
+
 ---
 
 ## Running with Docker
@@ -185,6 +202,7 @@ Test the service:
 curl.exe http://localhost:8080/health
 curl.exe http://localhost:8080/node
 curl.exe http://localhost:8080/
+curl.exe http://localhost:8080/metrics
 ```
 
 ---
@@ -220,6 +238,12 @@ Access the API locally:
 
 ```
 kubectl port-forward -n node-watch svc/node-watch 8080:8080
+```
+
+Query the Prometheus-style `/metrics` endpoint:
+
+```
+curl.exe http://localhost:8080/metrics
 ```
 
 ---
@@ -275,6 +299,20 @@ Example JSON response from `/node`:
   "disk": [...]
 }
 ```
+
+Example Prometheus metrics output from `/metrics`:
+
+```
+# HELP nodewatch_cpu_usage_percent CPU usage percentage
+# TYPE nodewatch_cpu_usage_percent gauge
+nodewatch_cpu_usage_percent 0.4
+
+# HELP nodewatch_host_uptime_seconds Host uptime in seconds
+# TYPE nodewatch_host_uptime_seconds gauge
+nodewatch_host_uptime_seconds 40497.65
+
+```
+
 The exact fields depend on the current system state.
 
 ---
@@ -283,7 +321,6 @@ The exact fields depend on the current system state.
 
 Planned development stages include:
 
-- Prometheus metrics endpoint (`/metrics`)
 - Host-level telemetry via Kubernetes host mounts
 - Multi-node monitoring aggregation
 - Distributed telemetry collection experiments

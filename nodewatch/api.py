@@ -23,7 +23,7 @@ def get_log_level() -> str:
 
 class NodeWatchHandler(BaseHTTPRequestHandler):
     def _send_json(self, status_code: int, payload: dict) -> None:
-        response_body = json.dumps(payload).encode("utf-8")
+        response_body = json.dumps(payload, indent=2).encode("utf-8")
 
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json")

@@ -27,6 +27,10 @@ spec:
                 name: node-watch-config
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: host-root
+              mountPath: /host
+              readOnly: true
           resources:
             requests:
               cpu: "100m"
@@ -46,3 +50,8 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+            type: Directory
