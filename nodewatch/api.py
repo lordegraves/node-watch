@@ -4,7 +4,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from nodewatch.metrics import render_prometheus_metrics
 from nodewatch.service import get_node_data
+from nodewatch.logging import get_logger
 
+logger = get_logger()
 
 HOST = os.getenv("NODEWATCH_HOST", "0.0.0.0")
 
@@ -40,6 +42,18 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_body)
 
+    def log_request_event(self, path: str, status: int) -> None:
+        logger.info(
+            "request",
+            extra={
+                "extra": {
+                    "path": path,
+                    "status": status,
+                    "client": self.client_address[0],
+                }
+            },
+        )
+
     def log_message(self, format, *args):
         return
 
@@ -59,34 +73,48 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
                     ],
                 },
             )
+            self.log_request_event("/", 200)
             return
 
         if self.path == "/health":
             self._send_json(200, {"status": "ok"})
+            self.log_request_event("/health", 200)
             return
 
         if self.path == "/node":
             node_data = get_node_data()
             self._send_json(200, node_data)
+            self.log_request_event("/node", 200)
             return
 
         if self.path == "/metrics":
             metrics_output = render_prometheus_metrics()
             self._send_text(200, metrics_output)
+            self.log_request_event("/metrics", 200)
             return
 
         self._send_json(404, {"error": "not found"})
+        self.log_request_event(self.path, 404)
 
 
 def run_server() -> None:
     port = get_port()
     server = HTTPServer((HOST, port), NodeWatchHandler)
-    print(f"Node Watch API listening on http://{HOST}:{port}")
+
+    logger.info(
+        "nodewatch listening",
+        extra={
+            "extra": {
+                "host": HOST,
+                "port": port,
+            }
+        },
+    )
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nShutting down Node Watch API...")
+        logger.info("nodewatch shutting down")
     finally:
         server.server_close()
 
