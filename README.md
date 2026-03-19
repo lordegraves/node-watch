@@ -1,6 +1,6 @@
 # Node Watch
 
-Node Watch is a lightweight infrastructure monitoring agent built as a learning and engineering exercise.
+Node Watch is a lightweight node-level monitoring agent designed to explore system behavior, observability, and infrastructure reliability patterns.
 
 The project simulates a simplified node monitoring service similar to components used in real infrastructure platforms such as node exporters, kubelet statistics endpoints, or internal monitoring agents.
 
@@ -12,7 +12,7 @@ The focus of the project is clean architecture, modular design, and infrastructu
 
 Node Watch collects system telemetry and exposes that data through multiple interfaces.
 
-The project demonstrates how infrastructure tooling evolves from simple scripts into structured services that can be deployed across environments.
+The project demonstrates how infrastructure tooling evolves from simple scripts into structured, deployable services.
 
 Current interfaces include:
 
@@ -22,6 +22,29 @@ Current interfaces include:
 - Docker container runtime
 
 Lifecycle: Collectors → Service Layer → HTTP API → Container Runtime → Kubernetes (Namespace → Service → ConfigMap → DaemonSet)
+
+---
+
+## Quick Start
+
+Run locally:
+
+```bash
+python main.py
+```
+
+Start API:
+
+```bash
+python -m nodewatch.api
+```
+
+Query:
+
+```bash
+curl http://localhost:8080/node
+curl http://localhost:8080/metrics
+```
 
 ---
 
@@ -52,7 +75,7 @@ Collectors gather system information from the runtime environment.
 
 When running inside Kubernetes, additional host-level telemetry can be collected through a read-only host filesystem mount, allowing the agent to observe node-level telemetry rather than only container-scoped metrics.
 
-The service layer aggregates that information into a unified node representation.
+The service layer aggregates that information into a unified node representation. The design emphasizes separation of concerns, making the system easier to extend, test, and operate at scale.
 
 Interfaces expose the data through CLI or HTTP.
 
@@ -324,13 +347,13 @@ Planned development stages include:
 - Host-level telemetry via Kubernetes host mounts
 - Multi-node monitoring aggregation
 - Distributed telemetry collection experiments
-- AWS deployment experiments
+- Cloud deployment experiments (AWS)
 
 ---
 
 ## Purpose
 
-This project is designed as a practical infrastructure engineering exercise focused on:
+This project is designed as a practical infrastructure engineering project focused on:
 
 - Python for infrastructure tooling
 - modular service design
