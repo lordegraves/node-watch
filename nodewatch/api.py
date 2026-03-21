@@ -1,26 +1,14 @@
 import json
-import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from nodewatch.metrics import render_prometheus_metrics
 from nodewatch.service import get_node_data
 from nodewatch.logging import get_logger
+from nodewatch import config
 
 logger = get_logger()
 
-HOST = os.getenv("NODEWATCH_HOST", "0.0.0.0")
-
-
-def get_port() -> int:
-    value = os.getenv("NODEWATCH_PORT", "8080")
-    try:
-        return int(value)
-    except ValueError:
-        return 8080
-
-
-def get_log_level() -> str:
-    return os.getenv("NODEWATCH_LOG_LEVEL", "info").lower()
+HOST = config.API_HOST
 
 
 class NodeWatchHandler(BaseHTTPRequestHandler):
@@ -98,7 +86,7 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
 
 
 def run_server() -> None:
-    port = get_port()
+    port = config.API_PORT
     server = HTTPServer((HOST, port), NodeWatchHandler)
 
     logger.info(

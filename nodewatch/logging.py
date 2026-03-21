@@ -2,6 +2,7 @@ import json
 import logging
 import sys
 from datetime import datetime, timezone
+from nodewatch import config
 
 
 class JsonFormatter(logging.Formatter):
@@ -27,10 +28,16 @@ def get_logger(name: str = "nodewatch") -> logging.Logger:
         return logger
 
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter())
+
+    if config.LOG_JSON:
+        handler.setFormatter(JsonFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+    )
 
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(config.LOG_LEVEL)
     logger.propagate = False
 
     return logger
