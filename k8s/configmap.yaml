@@ -8,5 +8,7 @@ metadata:
     app.kubernetes.io/part-of: node-watch
     app.kubernetes.io/component: telemetry
 data:
-  NODEWATCH_LOG_LEVEL: "info"
-  NODEWATCH_PORT: "8080"
+  NODEWATCH_LOG_LEVEL: "INFO"
+  NODEWATCH_LOG_JSON: "true"
+  NODEWATCH_API_HOST: "0.0.0.0"
+  NODEWATCH_API_PORT: "8080"
