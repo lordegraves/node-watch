@@ -6,6 +6,8 @@ from nodewatch.api import NodeWatchHandler
 def make_handler(path):
     handler = NodeWatchHandler.__new__(NodeWatchHandler)
     handler.path = path
+    handler.command = "GET"
+    handler.client_address = ("127.0.0.1", 12345)
     handler.log_message = lambda format, *args: None
     return handler
 
@@ -25,6 +27,7 @@ def test_root_endpoint_returns_service_info():
         "endpoints": [
             "/",
             "/health",
+            "/ready",
             "/node",
             "/metrics",
             ],

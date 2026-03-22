@@ -21,7 +21,7 @@ Current interfaces include:
 - Prometheus `/metrics` endpoint
 - Docker container runtime
 
-Lifecycle: Collectors → Service Layer → HTTP API → Container Runtime → Kubernetes (Namespace → Service → ConfigMap → DaemonSet)
+Lifecycle: Collectors → Service Layer → Interfaces (CLI/API/Metrics) → Container Runtime → Kubernetes (Namespace → ConfigMap → DaemonSet → Service)
 
 ---
 
@@ -64,6 +64,7 @@ Current functionality includes:
 - Kubernetes namespace isolation
 - ConfigMap-driven runtime configuration
 - DaemonSet deployment model (one monitoring agent per node)
+- CronJob example demonstrating batch workload pattern (k8s/examples)
 
 ---
 
@@ -75,7 +76,7 @@ Collectors gather system information from the runtime environment.
 
 When running inside Kubernetes, additional host-level telemetry can be collected through a read-only host filesystem mount, allowing the agent to observe node-level telemetry rather than only container-scoped metrics.
 
-The service layer aggregates that information into a unified node representation. The design emphasizes separation of concerns, making the system easier to extend, test, and operate at scale.
+The service layer aggregates collector output into a unified node representation. The design emphasizes separation of concerns, making the system easier to extend, test, and operate.
 
 Interfaces expose the data through CLI or HTTP.
 
@@ -101,23 +102,23 @@ Examples of similar patterns exist in:
 
 ### Kubernetes Runtime Architecture
 
-Node Watch mounts the host filesystem in read-only mode to collect node-level telemetry.
+Node Watch runs as a DaemonSet, ensuring exactly one instance per node.
 
-This pattern mirrors how real monitoring agents (such as Prometheus node_exporter or Datadog agents) access host resources when deployed in Kubernetes.
+Each instance mounts the host filesystem in read-only mode to collect node-level telemetry beyond container scope.
+
+This mirrors how real monitoring agents (such as Prometheus node_exporter or Datadog agents) access host resources in Kubernetes environments.
 
 Runtime flow:
-
-Each Kubernetes node automatically runs exactly one Node Watch instance.
 
 Cluster Node
     ↓
 DaemonSet
     ↓
-Node Watch Pod
+Node Watch Pod (1 per node)
     ↓
 Container Runtime
     ↓
-HTTP API
+HTTP API (/node, /metrics)
 
 ---
 
@@ -125,15 +126,42 @@ HTTP API
 
 When deployed to Kubernetes, Node Watch runs as a node-level monitoring agent.
 
-ConfigMap
+ConfigMap (runtime configuration)
     ↓
-DaemonSet
+DaemonSet (scheduling model)
     ↓
 Node Watch Pod (one per node)
     ↓
 HTTP API
     ↓
-Service
+Service (cluster access)
+
+---
+
+## Architecture Diagram
+
+High-level system flow:
+
+```
+[Collectors]
+     ↓
+[Service Layer]
+     ↓
+[Interfaces]
+  ├─ CLI (main.py)
+  ├─ HTTP API (/node)
+  └─ Metrics (/metrics)
+     ↓
+[Container Runtime (Docker)]
+     ↓
+[Kubernetes]
+  ├─ ConfigMap (configuration)
+  ├─ DaemonSet (1 per node)
+  ├─ Pod (Node Watch instance)
+  └─ Service (cluster access)
+```
+
+This diagram reflects the progression from local execution to containerized runtime and finally to Kubernetes deployment, mirroring how infrastructure agents evolve in real-world environments.
 
 ---
 
@@ -163,6 +191,9 @@ node-watch
 │   ├── configmap.yaml
 │   ├── service.yaml
 │   └── daemonset.yaml
+│
+├── k8s/examples/
+│   └── cronjob.yaml
 │
 ├── tests/
 │
@@ -243,10 +274,7 @@ The Kubernetes deployment model uses:
 Apply the manifests:
 
 ```
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/daemonset.yaml
+kubectl apply -f k8s/
 ```
 
 Verify the deployment:
@@ -303,8 +331,10 @@ Current configurable settings:
 
 Example configuration (ConfigMap):
 
+```
 NODEWATCH_PORT=8080
 NODEWATCH_LOG_LEVEL=info
+```
 
 The application reads these values at startup using environment variables, allowing behavior to be modified without rebuilding the container image.
 

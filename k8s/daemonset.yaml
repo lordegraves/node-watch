@@ -26,7 +26,8 @@ spec:
             - configMapRef:
                 name: node-watch-config
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
           volumeMounts:
             - name: host-root
               mountPath: /host
@@ -40,14 +41,14 @@ spec:
               memory: "256Mi"
           readinessProbe:
             httpGet:
-              path: /health
-              port: 8080
+              path: /ready
+              port: http
             initialDelaySeconds: 3
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /health
-              port: 8080
+              port: http
             initialDelaySeconds: 10
             periodSeconds: 10
       volumes:

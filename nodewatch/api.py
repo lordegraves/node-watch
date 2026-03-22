@@ -30,12 +30,20 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_body)
 
+    def _should_log_request(self, path: str, status: int) -> bool:
+        suppressed_paths = {"/health", "/ready"}
+        return not (path in suppressed_paths and 200 <= status < 400)
+    
     def log_request_event(self, path: str, status: int) -> None:
+        if not self._should_log_request(path, status):
+            return
+        
         logger.info(
             "request",
             extra={
                 "extra": {
                     "path": path,
+                    "method": self.command,
                     "status": status,
                     "client": self.client_address[0],
                 }
@@ -56,6 +64,7 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
                     "endpoints": [
                         "/",
                         "/health",
+                        "/ready",
                         "/node",
                         "/metrics",
                     ],
@@ -69,6 +78,11 @@ class NodeWatchHandler(BaseHTTPRequestHandler):
             self.log_request_event("/health", 200)
             return
 
+        if self.path == "/ready":
+            self._send_json(200, {"status": "ready"})
+            self.log_request_event("/ready", 200)
+            return
+        
         if self.path == "/node":
             node_data = get_node_data()
             self._send_json(200, node_data)

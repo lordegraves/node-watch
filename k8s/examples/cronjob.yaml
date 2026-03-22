@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: node-watch-snapshot
+  namespace: node-watch
+  labels:
+    app.kubernetes.io/name: node-watch
+    app.kubernetes.io/part-of: node-watch
+    app.kubernetes.io/component: batch
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  startingDeadlineSeconds: 60
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: node-watch
+            app.kubernetes.io/part-of: node-watch
+            app.kubernetes.io/component: batch
+        spec:
+          restartPolicy: OnFailure
+          containers: 
+            - name: node-watch-snapshot
+              image: node-watch:dev
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - configMapRef:
+                    name: node-watch-config
+              command: ["python", "main.py"]
