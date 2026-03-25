@@ -65,6 +65,7 @@ Current functionality includes:
 - ConfigMap-driven runtime configuration
 - DaemonSet deployment model (one monitoring agent per node)
 - CronJob example demonstrating batch workload pattern (k8s/examples)
+- Go-based system probe integrated via subprocess execution (cross-language data collection)
 
 ---
 
@@ -86,6 +87,8 @@ Collectors
     ↓
 Service Layer (`service.py`)
     ↓
+External Probes (Go)
+    ↓
 Interfaces
     ├─ CLI (`main.py`)
     └─ HTTP API (`nodewatch/api.py`)
@@ -97,6 +100,18 @@ Examples of similar patterns exist in:
 - Prometheus node_exporter
 - Kubernetes kubelet statistics endpoints
 - internal infrastructure monitoring agents
+
+---
+
+### External Probe Integration (Go)
+
+Node Watch can execute external tools and merge their output into the node data model.
+
+A Go-based `system_probe` is invoked via subprocess execution from the service layer. The probe returns structured JSON via stdout, which is parsed and merged into the final node payload.
+
+This establishes a clean contract between components:
+
+Python (orchestration) → Go (system probe) → JSON → Python (aggregation)
 
 ---
 
@@ -147,6 +162,8 @@ High-level system flow:
      ↓
 [Service Layer]
      ↓
+[External Probes (Go)]
+     ↓
 [Interfaces]
   ├─ CLI (main.py)
   ├─ HTTP API (/node)
@@ -174,6 +191,9 @@ node-watch
 ├── Dockerfile
 ├── requirements.txt
 ├── .gitignore
+│
+├── go-probes/
+│   └── system_probe.go
 │
 ├── nodewatch/
 │   ├── api.py
@@ -349,7 +369,15 @@ Example JSON response from `/node`:
   "system": {...},
   "cpu": {...},
   "memory": {...},
-  "disk": [...]
+  "disk": [...],
+  "go_probe": {
+    "system_probe": {
+      "hostname": "...",
+      "logical_cpu_count": ...,
+      "os": "...",
+      "arch": "..."
+    }
+  }
 }
 ```
 

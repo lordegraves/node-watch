@@ -10,6 +10,8 @@ import (
 type SystemProbe struct {
 	Hostname        string `json:"hostname"`
 	LogicalCPUCount int    `json:"logical_cpu_count"`
+	OS              string `json:"os"`
+	Arch            string `json:"arch"`
 }
 
 type Output struct {
@@ -26,6 +28,8 @@ func main() {
 		SystemProbe: SystemProbe{
 			Hostname:        hostname,
 			LogicalCPUCount: runtime.NumCPU(),
+			OS:              runtime.GOOS,
+			Arch:            runtime.GOARCH,
 		},
 	}
 
