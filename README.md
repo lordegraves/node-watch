@@ -193,18 +193,21 @@ node-watch
 ├── .gitignore
 │
 ├── go-probes/
-│   └── system_probe.go
+│   ├── system_probe.go
+│   ├── memory_probe.go
+│   ├── go.mod
+│   └── go.sum
 │
 ├── nodewatch/
 │   ├── api.py
 │   ├── service.py
 │   ├── metrics.py
-│   ├── host_info.py
 │   └── collectors/
 │       ├── system_info.py
 │       ├── cpu.py
 │       ├── memory.py
-│       └── disk.py
+│       ├── disk.py
+│       └── host_info.py
 │
 ├── k8s/
 │   ├── namespace.yaml
@@ -321,15 +324,23 @@ curl.exe http://localhost:8080/metrics
 
 ## Container Runtime Behavior
 
-When Node Watch runs inside Docker, telemetry reflects the container runtime environment rather than the Windows host system.
+When Node Watch runs inside Docker or Kubernetes, telemetry reflects the environment it is running in rather than the outer host system.
+
+The service distinguishes between two perspectives:
+
+- **runtime** — the container or pod environment where Node Watch is executing
+- **host** — the node the container is running on
 
 Example differences include:
 
-- hostname becomes the container ID
-- OS appears as Linux (Docker runtime via WSL2)
-- memory and disk reflect container-visible resources
+- runtime hostname reflects the container or pod
+- host hostname reflects the node
+- OS may differ between runtime and host
+- memory and disk usage reflect what is visible within each scope
 
-This behavior mirrors how infrastructure agents behave when deployed inside container orchestration systems such as Kubernetes.
+In Kubernetes environments, “host” refers to the node the pod is scheduled on. In local setups such as kind, that node may itself be a container, so host-level telemetry reflects the node environment rather than the physical machine.
+
+This mirrors how real infrastructure monitoring agents operate, where node-level telemetry is collected from within the orchestration environment rather than from outside it.
 
 ---
 
@@ -366,17 +377,30 @@ Example JSON response from `/node`:
 
 ```json
 {
-  "system": {...},
-  "cpu": {...},
-  "memory": {...},
-  "disk": [...],
-  "go_probe": {
-    "system_probe": {
-      "hostname": "...",
-      "logical_cpu_count": ...,
-      "os": "...",
-      "arch": "..."
+  "host": {
+    "system": {...},
+    "cpu": {...},
+    "memory": {...},
+    "disk": [...],
+    "go_probe": {
+      "system_probe": {
+        "hostname": "...",
+        "logical_cpu_count": ...,
+        "os": "...",
+        "arch": "..."
+      },
+      "memory_probe": {
+        "total_mb": ...,
+        "used_mb": ...,
+        "percent_used": ...
+      }
     }
+  },
+  "runtime": {
+    "system": {...},
+    "cpu": {...},
+    "memory": {...},
+    "disk": [...]
   }
 }
 ```
@@ -386,11 +410,33 @@ Example Prometheus metrics output from `/metrics`:
 ```
 # HELP nodewatch_cpu_usage_percent CPU usage percentage
 # TYPE nodewatch_cpu_usage_percent gauge
-nodewatch_cpu_usage_percent 0.4
+nodewatch_cpu_usage_percent{scope="host"} 0.6
+nodewatch_cpu_usage_percent{scope="runtime"} 0.9
 
-# HELP nodewatch_host_uptime_seconds Host uptime in seconds
-# TYPE nodewatch_host_uptime_seconds gauge
-nodewatch_host_uptime_seconds 40497.65
+# HELP nodewatch_memory_total_mb Total memory in MB
+# TYPE nodewatch_memory_total_mb gauge
+nodewatch_memory_total_mb{scope="host"} 15796.19
+nodewatch_memory_total_mb{scope="runtime"} 15796.19
+
+# HELP nodewatch_memory_used_mb Used memory in MB
+# TYPE nodewatch_memory_used_mb gauge
+nodewatch_memory_used_mb{scope="host"} 1717.01
+nodewatch_memory_used_mb{scope="runtime"} 1717.01
+
+# HELP nodewatch_memory_percent_used Memory used percentage
+# TYPE nodewatch_memory_percent_used gauge
+nodewatch_memory_percent_used{scope="host"} 10.9
+nodewatch_memory_percent_used{scope="runtime"} 10.9
+
+# HELP nodewatch_uptime_seconds Uptime in seconds
+# TYPE nodewatch_uptime_seconds gauge
+nodewatch_uptime_seconds{scope="host"} 119296.04
+nodewatch_uptime_seconds{scope="runtime"} 119296
+
+# HELP nodewatch_disk_used_percent Disk used percentage
+# TYPE nodewatch_disk_used_percent gauge
+nodewatch_disk_used_percent{device="/dev/sde",mountpoint="/host/var"} 0.7
+nodewatch_disk_used_percent{device="/dev/sdd",mountpoint="/host/usr/lib/modules"} 56.4
 
 ```
 
