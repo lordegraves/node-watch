@@ -1,21 +1,38 @@
 import json
+import platform
 import subprocess
 from pathlib import Path
 
-from nodewatch.collectors.system_info import get_system_info
-from nodewatch.collectors.cpu import get_cpu_info
-from nodewatch.collectors.memory import get_memory_info
-from nodewatch.collectors.disk import get_disk_info
-from nodewatch.host_info import get_host_uptime_seconds
+from nodewatch.collectors.system_info import (
+    get_host_system_info,
+    get_runtime_system_info,
+)
+from nodewatch.collectors.cpu import (
+    get_host_cpu_info,
+    get_runtime_cpu_info,
+)
+from nodewatch.collectors.memory import (
+    get_host_memory_info,
+    get_runtime_memory_info,
+)
+from nodewatch.collectors.disk import (
+    get_host_disk_info,
+    get_runtime_disk_info,
+)
 
 
-def run_go_probe():
+def run_go_probe(probe_filename):
     project_root = Path(__file__).resolve().parent.parent
-    probe_path = project_root / "go-probes" / "system_probe.go"
+    bin_dir = project_root / "bin"
+
+    if platform.system().lower() == "windows":
+        probe_path = bin_dir / f"{probe_filename}.exe"
+    else:
+        probe_path = bin_dir / probe_filename
 
     try:
         result = subprocess.run(
-            ["go", "run", str(probe_path)],
+            [str(probe_path)],
             capture_output=True,
             text=True,
             check=True,
@@ -24,7 +41,7 @@ def run_go_probe():
 
     except FileNotFoundError:
         return {
-            "error": "go executable not found"
+            "error": "go probe executable not found"
         }
 
     except subprocess.CalledProcessError as exc:
@@ -32,26 +49,34 @@ def run_go_probe():
             "error": "go probe execution failed",
             "stderr": exc.stderr.strip(),
             "stdout": exc.stdout.strip(),
-    }
-    
+        }
+
     except json.JSONDecodeError:
         return {
             "error": "go probe returned invalid JSON",
-            "stdout": result.stdout.strip() if "result" in locals() else "",
+            "stdout": result.stdout.strip(),
         }
 
 
 def get_node_data():
-    system = get_system_info()
-
-    host_uptime = get_host_uptime_seconds()
-    if host_uptime is not None:
-        system["host_uptime_seconds"] = host_uptime
+    system_probe_data = run_go_probe("system_probe")
+    memory_probe_data = run_go_probe("memory_probe")
 
     return {
-        "system": system,
-        "cpu": get_cpu_info(),
-        "memory": get_memory_info(),
-        "disk": get_disk_info(),
-        "go_probe": run_go_probe(),
+        "host": {
+            "system": get_host_system_info(),
+            "cpu": get_host_cpu_info(),
+            "memory": get_host_memory_info(),
+            "disk": get_host_disk_info(),
+            "go_probe": {
+                "system_probe": system_probe_data.get("system_probe", system_probe_data),
+                "memory_probe": memory_probe_data.get("memory_probe", memory_probe_data),
+            },
+        },
+        "runtime": {
+            "system": get_runtime_system_info(),
+            "cpu": get_runtime_cpu_info(),
+            "memory": get_runtime_memory_info(),
+            "disk": get_runtime_disk_info(),
+        },
     }

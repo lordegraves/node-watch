@@ -1,13 +1,14 @@
 from pathlib import Path
 
 
+HOST_ROOT = Path("/host")
+
+
 def get_host_uptime_seconds() -> float | None:
-    uptime_path = Path("/host/proc/uptime")
-    if not uptime_path.exists():
-        return None
-    
+    uptime_path = HOST_ROOT / "proc" / "uptime"
+
     try:
         content = uptime_path.read_text(encoding="utf-8").strip()
         return float(content.split()[0])
-    except (ValueError, OSError, IndexError):
+    except (FileNotFoundError, ValueError, OSError, IndexError):
         return None

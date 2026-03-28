@@ -21,15 +21,15 @@ def test_root_endpoint_returns_service_info():
     mock_send_json.assert_called_once_with(
         200,
         {
-        "service": "node-watch",
-        "version": "0.1.0",
-        "description": "Lightweight node telemetry service",
-        "endpoints": [
-            "/",
-            "/health",
-            "/ready",
-            "/node",
-            "/metrics",
+            "service": "node-watch",
+            "version": "0.1.0",
+            "description": "Lightweight node telemetry service",
+            "endpoints": [
+                "/",
+                "/health",
+                "/ready",
+                "/node",
+                "/metrics",
             ],
         },
     )
@@ -47,10 +47,22 @@ def test_health_endpoint_returns_ok():
 @patch("nodewatch.api.get_node_data")
 def test_node_endpoint_returns_telemetry(mock_get_node_data):
     mock_get_node_data.return_value = {
-        "system": {"hostname": "test-node"},
-        "cpu": {"usage_percent": 10.5},
-        "memory": {"percent_used": 42.0},
-        "disk": [],
+        "host": {
+            "system": {"hostname": "host-node"},
+            "cpu": {"usage_percent": 20.0},
+            "memory": {"percent_used": 55.0},
+            "disk": [],
+            "go_probe": {
+                "system_probe": {"hostname": "host-node"},
+                "memory_probe": {"total_mb": 32000, "used_mb": 16000, "percent_used": 50.0},
+            },
+        },
+        "runtime": {
+            "system": {"hostname": "runtime-node"},
+            "cpu": {"usage_percent": 10.5},
+            "memory": {"percent_used": 42.0},
+            "disk": [],
+        },
     }
 
     handler = make_handler("/node")
