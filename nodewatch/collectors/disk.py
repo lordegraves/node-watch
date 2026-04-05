@@ -54,9 +54,7 @@ def get_host_disk_info():
     disks = []
 
     if not HOST_ROOT.exists():
-        return {
-            "error": "host root mount not available"
-        }
+        return []
 
     for partition in psutil.disk_partitions():
         mount = partition.mountpoint
