@@ -17,3 +17,7 @@ Thumbs.db
 
 # key pem
 *.pem
+
+# tar
+*.tar
+*.tar.gz
