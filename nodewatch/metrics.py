@@ -1,4 +1,5 @@
 from nodewatch.service import get_node_data
+import os
 
 
 def _escape_label(value: object) -> str:
@@ -19,6 +20,11 @@ def render_prometheus_metrics() -> str:
     node_data = get_node_data()
     lines = []
 
+    node_name = _escape_label(os.getenv("NODE_NAME", "unknown"))
+
+    def labels(scope: str) -> str:
+        return f'node="{node_name}",scope="{scope}"'
+
     host = _safe_dict(node_data.get("host", {}))
     runtime = _safe_dict(node_data.get("runtime", {}))
 
@@ -30,10 +36,10 @@ def render_prometheus_metrics() -> str:
     runtime_cpu = _safe_dict(runtime.get("cpu", {}))
 
     if host_cpu.get("usage_percent") is not None:
-        lines.append(f'nodewatch_cpu_usage_percent{{scope="host"}} {host_cpu.get("usage_percent")}')
+        lines.append(f'nodewatch_cpu_usage_percent{{{labels("host")}}} {host_cpu.get("usage_percent")}')
 
     if runtime_cpu.get("usage_percent") is not None:
-        lines.append(f'nodewatch_cpu_usage_percent{{scope="runtime"}} {runtime_cpu.get("usage_percent")}')
+        lines.append(f'nodewatch_cpu_usage_percent{{{labels("runtime")}}} {runtime_cpu.get("usage_percent")}')
 
     # --- MEMORY ---
     lines.append("# HELP nodewatch_memory_total_mb Total memory in MB")
@@ -42,20 +48,20 @@ def render_prometheus_metrics() -> str:
     host_mem = _safe_dict(host.get("memory", {}))
     runtime_mem = _safe_dict(runtime.get("memory", {}))
 
-    lines.append(f'nodewatch_memory_total_mb{{scope="host"}} {host_mem.get("total_mb", 0)}')
-    lines.append(f'nodewatch_memory_total_mb{{scope="runtime"}} {runtime_mem.get("total_mb", 0)}')
+    lines.append(f'nodewatch_memory_total_mb{{{labels("host")}}} {host_mem.get("total_mb", 0)}')
+    lines.append(f'nodewatch_memory_total_mb{{{labels("runtime")}}} {runtime_mem.get("total_mb", 0)}')
 
     lines.append("# HELP nodewatch_memory_used_mb Used memory in MB")
     lines.append("# TYPE nodewatch_memory_used_mb gauge")
 
-    lines.append(f'nodewatch_memory_used_mb{{scope="host"}} {host_mem.get("used_mb", 0)}')
-    lines.append(f'nodewatch_memory_used_mb{{scope="runtime"}} {runtime_mem.get("used_mb", 0)}')
+    lines.append(f'nodewatch_memory_used_mb{{{labels("host")}}} {host_mem.get("used_mb", 0)}')
+    lines.append(f'nodewatch_memory_used_mb{{{labels("runtime")}}} {runtime_mem.get("used_mb", 0)}')
 
     lines.append("# HELP nodewatch_memory_percent_used Memory used percentage")
     lines.append("# TYPE nodewatch_memory_percent_used gauge")
 
-    lines.append(f'nodewatch_memory_percent_used{{scope="host"}} {host_mem.get("percent_used", 0)}')
-    lines.append(f'nodewatch_memory_percent_used{{scope="runtime"}} {runtime_mem.get("percent_used", 0)}')
+    lines.append(f'nodewatch_memory_percent_used{{{labels("host")}}} {host_mem.get("percent_used", 0)}')
+    lines.append(f'nodewatch_memory_percent_used{{{labels("runtime")}}} {runtime_mem.get("percent_used", 0)}')
 
     # --- UPTIME ---
     lines.append("# HELP nodewatch_uptime_seconds Uptime in seconds")
@@ -65,10 +71,10 @@ def render_prometheus_metrics() -> str:
     runtime_sys = _safe_dict(runtime.get("system", {}))
 
     if host_sys.get("uptime_seconds") is not None:
-        lines.append(f'nodewatch_uptime_seconds{{scope="host"}} {host_sys.get("uptime_seconds")}')
+        lines.append(f'nodewatch_uptime_seconds{{{labels("host")}}} {host_sys.get("uptime_seconds")}')
 
     if runtime_sys.get("uptime_seconds") is not None:
-        lines.append(f'nodewatch_uptime_seconds{{scope="runtime"}} {runtime_sys.get("uptime_seconds")}')
+        lines.append(f'nodewatch_uptime_seconds{{{labels("runtime")}}} {runtime_sys.get("uptime_seconds")}')
 
     # --- DISK (host only) ---
     lines.append("# HELP nodewatch_disk_used_percent Disk used percentage")
@@ -81,7 +87,7 @@ def render_prometheus_metrics() -> str:
         value = disk.get("percent_used", 0)
 
         lines.append(
-            f'nodewatch_disk_used_percent{{device="{device}",mountpoint="{mountpoint}"}} {value}'
+            f'nodewatch_disk_used_percent{{node="{node_name}",device="{device}",mountpoint="{mountpoint}"}} {value}'
         )
 
     return "\n".join(lines) + "\n"

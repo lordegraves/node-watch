@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/part-of: node-watch
         app.kubernetes.io/component: telemetry
     spec:
+      serviceAccountName: node-watch
+      automountServiceAccountToken: false
       containers:
         - name: node-watch
           image: node-watch:dev
@@ -25,6 +27,11 @@ spec:
           envFrom:
             - configMapRef:
                 name: node-watch-config
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           ports:
             - name: http
               containerPort: 8080

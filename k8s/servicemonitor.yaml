@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: node-watch
+  namespace: node-watch
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: node-watch
+    app.kubernetes.io/part-of: node-watch
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-watch
+  namespaceSelector:
+    matchNames:
+      - node-watch
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
