@@ -1,0 +1,48 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-watch-alerts
+  namespace: node-watch
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: node-watch
+    app.kubernetes.io/part-of: node-watch
+spec:
+  groups:
+    - name: node-watch.rules
+      rules:
+        - alert: NodeWatchAgentDown
+          expr: up{namespace="node-watch", job="node-watch"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node Watch agent scrape failed"
+            description: "Prometheus cannot scrape Node Watch metrics from {{ $labels.pod }}."
+
+        - alert: NodeWatchHighMemoryUsage
+          expr: avg by (node) (nodewatch_memory_percent_used{scope="host", node=~"k3s-.+"}) > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage on Kubernetes node"
+            description: "Node {{ $labels.node }} memory usage is above 85% for more than 5 minutes."
+
+        - alert: NodeWatchHighDiskUsage
+          expr: avg by (node) (nodewatch_disk_used_percent{node=~"k3s-.+", device!~"/dev/loop.*"}) > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High disk usage on Kubernetes node"
+            description: "Node {{ $labels.node }} disk usage is above 85% for more than 5 minutes."
+
+        - alert: NodeWatchHighCPUUsage
+          expr: avg by (node) (nodewatch_cpu_usage_percent{scope="host", node=~"k3s-.+"}) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage on Kubernetes node"
+            description: "Node {{ $labels.node }} CPU usage is above 80% for more than 5 minutes."
